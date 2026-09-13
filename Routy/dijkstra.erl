@@ -4,8 +4,12 @@
 % returns the length of the shortest path to the
 % node or 0 if the node is not found.
 entry(Node, Sorted) ->
-    {_, Length, _} = lists:keyfind(Node, 1, Sorted),
-    Length.
+    case lists:keyfind(Node, 1, Sorted) of
+        {_, Length, _} ->
+            Length;
+        false ->
+            0
+    end.
 
 % replaces the entry for Node in Sorted with a new entry having a new length N
 % and Gateway. The resulting list should, of course, be sorted.

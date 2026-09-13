@@ -44,7 +44,7 @@ add_nodes(Nodes, Acc) ->
         Acc,
         Nodes).
 
-
-all_nodes(Map) ->
-    ResultingSet = lists:foldl(fun({Node, Links}, Set) -> sets:union(Set, sets:from_list([Node | Links])) end, sets:new(), Map),
-    sets:to_list(ResultingSet).
+% TODO: Optimize this
+% all_nodes(Map) ->
+%     ResultingSet = lists:foldl(fun({Node, Links}, Set) -> sets:union(Set, sets:from_list([Node | Links])) end, sets:new(), Map),
+%     sets:to_list(ResultingSet).

@@ -39,6 +39,21 @@ update(Node, N, Gateway, Sorted) ->
             Sorted
     end.
 
+update_nodes([], _, _, Sorted) ->
+    Sorted;
+update_nodes([H | T], N, Gateway, Sorted) ->
+    UpdatedSorted = update(H, N, Gateway, Sorted),
+    update_nodes(T, N, Gateway, UpdatedSorted).
+
+iterate([], _, Table) ->
+    Table;
+iterate([{_, inf, _} | _], _, Table) ->
+    Table;
+iterate([{Node, Length, Gateway} | T], Map, Table) ->
+    Neighbors = map:reachable(Node, Map),
+    UpdatedSorted = update_nodes(Neighbors, Length + 1, Gateway, T),
+    iterate(UpdatedSorted, Map, [{Node, Gateway} | Table]).
+
 % construct a routing table given the gateways and a map.
 table(Gateways, Map) ->
     Nodes = map:all_nodes(Map),
@@ -47,19 +62,21 @@ table(Gateways, Map) ->
         fun(Node) ->
             {Node, inf, unknown}
         end,
-        Nodes),
+        Nodes
+    ),
 
     InitialSorted = lists:foldl(
         fun(Gateway, Acc) ->
             replace(Gateway, 0, Gateway, Acc)
         end,
         Sorted,
-        Gateways),
+        Gateways
+    ),
 
     iterate(InitialSorted, Map, []).
 
-% search the routing table and return the gateway suitable to route messages 
-% to a node. If a gateway is found, we should return {ok, Gateway}; 
+% search the routing table and return the gateway suitable to route messages
+% to a node. If a gateway is found, we should return {ok, Gateway};
 % otherwise, we return notfound.
 route(Node, Table) ->
     case lists:keyfind(Node, 1, Table) of

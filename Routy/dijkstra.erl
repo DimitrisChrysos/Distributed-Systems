@@ -1,7 +1,13 @@
 -module(dijkstra).
--export([replace/4, update/4]).
+-export([entry/2, replace/4, update/4]).
 
-% replaces the entry for Node in Sorted with a new entry having a new length N 
+% returns the length of the shortest path to the
+% node or 0 if the node is not found.
+entry(Node, Sorted) ->
+    {_, Length, _} = lists:keyfind(Node, 1, Sorted),
+    Length.
+
+% replaces the entry for Node in Sorted with a new entry having a new length N
 % and Gateway. The resulting list should, of course, be sorted.
 replace(Node, N, Gateway, Sorted) ->
     WithoutOldNode = lists:keydelete(Node, 1, Sorted),
@@ -17,8 +23,8 @@ insert({_, N, _} = Entry, [{_, HeadN, _} = Head | Tail])
 insert(Entry, [Head | Tail]) ->
     [Head | insert(Entry, Tail)].
 
-% update the list Sorted given the information that Node can be reached in N 
-% hops using Gateway. If no entry is found, then no new entry is added. Only 
+% update the list Sorted given the information that Node can be reached in N
+% hops using Gateway. If no entry is found, then no new entry is added. Only
 % if we have a better (shorter) path should we replace the existing entry
 update(Node, N, Gateway, Sorted) ->
     Current = entry(Node, Sorted),

@@ -1,5 +1,5 @@
 -module(dijkstra).
--export([entry/2, replace/4, update/4]).
+-export([table/2, route/2]).
 
 % returns the length of the shortest path to the
 % node or 0 if the node is not found.
@@ -37,4 +37,34 @@ update(Node, N, Gateway, Sorted) ->
             replace(Node, N, Gateway, Sorted);
         false ->
             Sorted
+    end.
+
+% construct a routing table given the gateways and a map.
+table(Gateways, Map) ->
+    Nodes = map:all_nodes(Map),
+
+    Sorted = lists:map(
+        fun(Node) ->
+            {Node, inf, unknown}
+        end,
+        Nodes),
+
+    InitialSorted = lists:foldl(
+        fun(Gateway, Acc) ->
+            replace(Gateway, 0, Gateway, Acc)
+        end,
+        Sorted,
+        Gateways),
+
+    iterate(InitialSorted, Map, []).
+
+% search the routing table and return the gateway suitable to route messages 
+% to a node. If a gateway is found, we should return {ok, Gateway}; 
+% otherwise, we return notfound.
+route(Node, Table) ->
+    case lists:keyfind(Node, 1, Table) of
+        {Node, Gateway} ->
+            {ok, Gateway};
+        false ->
+            notfound
     end.

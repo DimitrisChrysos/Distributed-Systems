@@ -1,5 +1,5 @@
 -module(dijkstra).
--export([table/2, route/2]).
+-export([table/2, route/2, iterate/3]).
 
 % returns the length of the shortest path to the
 % node or 0 if the node is not found.
@@ -21,7 +21,7 @@ insert(Entry, []) ->
     [Entry];
 
 insert({_, N, _} = Entry, [{_, HeadN, _} = Head | Tail])
-    when N =< HeadN ->
+    when N < HeadN ->
     [Entry, Head | Tail];
 
 insert(Entry, [Head | Tail]) ->

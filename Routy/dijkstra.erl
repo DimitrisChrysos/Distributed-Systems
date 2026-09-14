@@ -1,5 +1,5 @@
 -module(dijkstra).
--export([table/2, route/2, iterate/3]).
+-export([table/2, route/2]).
 
 % returns the length of the shortest path to the
 % node or 0 if the node is not found.

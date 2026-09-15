@@ -43,6 +43,10 @@ Discuss the difficulties we actually encountered, for example:
 
 ### 4. Possible improvements
 
+- Use a hashmap instead of a list in the `map` module.
+   - This will make operations like `intf:remove()`, `intf:lookup()` and `intf:ref()` faster, since hashmap lookup is O(1), while searching through a list is O(n). A map entry could have the format: `Name: {Ref, Pid}` (for faster operations by name). We could also have a second map in the format of `Ref: Name`, in order to make `intf:name()` more efficient (but we also increase the space complexity since each interface will need to be stored in two maps).
+- In `dijkstra:table()`, iterate the list only once instead of twice (have a check like: if node is a gateway->{node,0,node} else->{node, inf, unknown}).
+- Maybe use different data structures for the interfaces and history (maybe set for interfaces and hashmap for history)?
 - Broadcast link-state information automatically when an interface changes.
 - Rebuild the routing table automatically when the map changes.
 - Support weighted links instead of treating every link as one hop.

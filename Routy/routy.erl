@@ -21,7 +21,7 @@ router(Name, N, Hist, Intf, Table, Map) ->
         {send, To, Message} ->
             self() ! {route, To, Name, Message},
             router(Name, N, Hist, Intf, Table, Map);
-        {route, Name, From, Message} ->
+        {route, Name, _From, Message} ->
             io:format("~w: received message ~w ~n", [Name, Message]),
             router(Name, N, Hist, Intf, Table, Map);
         {route, To, From, Message} ->

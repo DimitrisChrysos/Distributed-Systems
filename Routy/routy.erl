@@ -11,10 +11,9 @@ stop(Node) ->
 init(Name) ->
     Intf = intf:new(),
     Map = map:new(),
-    Table = dijkstra:table(Intf, Map), % TODO: maybe it should be this instead: Table = dijkstra:table(intf:list(Intf), Map),
+    Table = dijkstra:table(Intf, Map),
     Hist = hist:new(Name),
-    % router(Name, 0, Msgs, Intf, Table, Map).
-    router(Name, 0, Hist, Intf, Table, Map). % TODO: the original line (commented out above) had "Msgs" instead of "Hist" which does not make sense
+    router(Name, 0, Hist, Intf, Table, Map).
 
 router(Name, N, Hist, Intf, Table, Map) ->
     receive

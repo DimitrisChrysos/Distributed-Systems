@@ -23,11 +23,10 @@ run() ->
     r1 ! {send, nowhere, "this should be dropped"},
     timer:sleep(200),
     io:format("~n6) Killing a router to simulate a crash~n", []),
-    % exit(whereis(r5), kill),
     routy:stop(r5),
     timer:sleep(300),
     print_statuses([r1, r2, r3, r4]), % r5 is dead so we cant 'status' it
-    io:format("~n7) Broadcasting the links for all nodes~n", []),
+    io:format("~n7) Broadcasting the links for r3 node~n", []),
     broadcast_all([r3]),
     print_statuses([r1, r2, r3, r4]), % r5 is dead so we cant 'status' it
     io:format("~n8) Rebuilding routing tables after the failure~n", []),
@@ -36,17 +35,12 @@ run() ->
     io:format("~n9) Restarting the dead router and rejoining the network~n", []),
 
 
-    % here, something weird happens. For some reason, when we
-    % restart larisa and add it to thessaloniki again, thessaloniki
+    % Here, when we restart larisa and add it to thessaloniki again, thessaloniki
     % reinserts the tuples {athens, larisa}, {patras, larisa} to its table (after broadcast+update),
     % even though the link larisa -> athens has not been created. This is because
     % thessaloniki's map is not updated after larisa dies (only thessaloniki's interfaces list is updated)
-    % and thus when we recreate thessalonikis's table when larisa respawns, it is done
-    % with the old map, where larisa had the link larisa -> athens.
-    % We probably need to update the map whenever we receive a DOWN message in order
-    % to remove the dead processes from it.
-    % Or maybe this is the expected behaviour and whenever a dead process respawns, it
-    % keeps its old connections.
+    % and thus when we recreate thessalonikis's table when larisa respawns, it is done with the old 
+    % map, where larisa had the link larisa -> athens. This is a known limitation.
 
     routy:start(r5, larisa),
     r3 ! {add, larisa, whereis(r5)},
@@ -74,6 +68,7 @@ connect_topology() ->
     r1 ! {add, patras, whereis(r2)},
     % patras -> thessaloniki
     r2 ! {add, thessaloniki, whereis(r3)},
+
     % thessaloniki -> katerini
     % thessaloniki -> larisa
     r3 ! {add, katerini, whereis(r4)},
@@ -94,7 +89,6 @@ broadcast_all(Routers) ->
             routy:broadcast(Node),
             timer:sleep(80)
         end,
-        % [r1, r2, r3, r4, r5]
         Routers
     ),
     ok.
@@ -106,7 +100,6 @@ update_all(Routers) ->
             routy:update(Node),
             timer:sleep(80)
         end,
-        % [r1, r2, r3, r4, r5]
         Routers
     ),
     ok.
@@ -115,22 +108,11 @@ print_statuses(Routers) ->
     lists:foreach(
         fun(Node) ->
             io:format("~n-- status for ~p --~n", [Node]),
-            % io:format("~p~n", [status_for(Node)])
             io:format("~p~n", [routy:status(Node)])
         end,
-        % [r1, r2, r3, r4, r5]
         Routers
     ),
     ok.
-
-% status_for(Node) ->
-%     Node ! {status, self()},
-%     receive
-%         {status, State} ->
-%             State
-%     after 2000 ->
-%         {status_timeout, Node}
-%     end.
 
 teardown() ->
     lists:foreach(

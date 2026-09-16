@@ -65,6 +65,10 @@ table(Gateways, Map) ->
         Nodes
     ),
 
+    % this can also be optimized to create the
+    % InitialSorted list using only one list traversal
+    % (instead of 2), by placing {Gateway, 0, Gateway} instead
+    % of {Node, inf, unknown} if the Node is a gateway.
     InitialSorted = lists:foldl(
         fun(Gateway, Acc) ->
             replace(Gateway, 0, Gateway, Acc)

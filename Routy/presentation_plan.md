@@ -19,7 +19,7 @@ Athens -> Thessaloniki -> Stockholm -> Delhi -> Tokyo -> Athens
 Tokyo -> Delhi
 ``` -->
 
-![presentation-topology](/Routy/presentation_graph.png)
+![presentation-topology](/presentation_graph.png)
 
 It is a one-directional cycle graph that also has:
 - `Tokyo -> Delhi` bidirectional pair
@@ -141,7 +141,7 @@ Athens -> Thessaloniki -> Stockholm -> Delhi -> Tokyo -> Athens
 Tokyo -> Delhi
 ``` -->
 This creates the topology:
-![presentation-topology](/Routy/presentation_graph.png)
+![presentation-topology](/presentation_graph.png)
 
 ## 6. Broadcast link-state information and build tables
 
@@ -310,10 +310,12 @@ Athens -> Thessaloniki -> Stockholm -> Delhi -> Tokyo
 
 ## 9. Optional final limitation demonstration
 
-Only do this last, because it deliberately breaks the main route from Athens. Stop Stockholm in the Sweden terminal:
-
 ```erlang
 routy:stop(stockholm_r).
 ```
 
-Thessaloniki detects the failure because it has Stockholm as an interface. A message from Athens to Tokyo can no longer pass Thessaloniki, even though some other directed routes may still work.
+## 10. Optional whole-country node failure
+
+```erlang
+q().
+```

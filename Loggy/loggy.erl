@@ -1,8 +1,11 @@
 -module(loggy).
--export([start/1, stop/1]).
+-export([start/1, stop/1, start/2]).
 
 start(Nodes) ->
     spawn_link(fun() ->init(Nodes) end).
+
+start(vector, Nodes) ->
+    spawn_link(fun() -> init(vector, Nodes) end).
 
 stop(Logger) ->
     Logger ! stop.
@@ -11,6 +14,9 @@ init(Nodes) ->
     Clock = time:clock(Nodes),
     HoldbackQueue = [],
     loop(Nodes, Clock, HoldbackQueue, 0).
+
+init(vector, Nodes) ->
+    loop(vector).
 
 loop(Nodes, Clock, HoldbackQueue, MaxQueueSize) ->
     receive
@@ -23,6 +29,15 @@ loop(Nodes, Clock, HoldbackQueue, MaxQueueSize) ->
             loop(Nodes, UpdatedClock, UnsafeQueue, UpdatedMaxQueueSize);
         stop ->
             io:format("Maximum holdback queue size: ~p~n", [MaxQueueSize]),
+            ok
+    end.
+
+loop(vector) ->
+    receive
+        {log, From, Time, Msg} ->
+            log(From, Time, Msg),
+            loop(vector);
+        stop ->
             ok
     end.
 

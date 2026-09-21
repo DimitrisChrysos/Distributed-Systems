@@ -1,5 +1,4 @@
 -module(test).
-
 -export([run/2]).
 
 % report on your initial observations

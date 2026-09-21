@@ -1,5 +1,4 @@
 -module(loggy).
-
 -export([start/1, stop/1]).
 
 start(Nodes) ->
@@ -8,17 +7,36 @@ start(Nodes) ->
 stop(Logger) ->
     Logger ! stop.
 
-init(_) ->
-    loop().
+init(Nodes) ->
+    Clock = time:clock(Nodes),
+    HoldbackQueue = [],
+    loop(Nodes, Clock, HoldbackQueue).
 
-loop() ->
+loop(Nodes, Clock, HoldbackQueue) ->
     receive
         {log, From, Time, Msg} ->
-            log(From, Time, Msg),
-            loop();
+            UpdatedClock = time:update(From, Time, Clock),
+            UpdatedHoldbackQueue = [{From, Time, Msg} | HoldbackQueue],
+            {SafeQueue, UnsafeQueue} = get_safe_and_unsafe_queue(UpdatedClock, UpdatedHoldbackQueue),
+            log_safe_queue(SafeQueue),
+            loop(Nodes, UpdatedClock, UnsafeQueue);
         stop ->
             ok
     end.
+
+get_safe_and_unsafe_queue(Clock, Queue) ->
+    lists:partition(
+        fun({_From, Time, _Msg}) ->
+            time:safe(Time, Clock)
+        end,
+        Queue
+    ).
+
+log_safe_queue(SafeQueue) ->
+    OrderedSafe = lists:keysort(2, SafeQueue),
+    lists:foreach(
+        fun({From, Time, Msg}) -> log(From, Time, Msg) end, OrderedSafe
+    ).
 
 log(From, Time, Msg) ->
     io:format("log: ~w ~w ~p~n", [Time, From, Msg]).

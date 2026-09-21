@@ -1,5 +1,4 @@
 -module(worker).
-
 -export([start/5, stop/1, peers/2]).
 
 start(Name, Logger, Seed, Sleep, Jitter) ->

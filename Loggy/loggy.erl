@@ -1,4 +1,4 @@
--module(logger).
+-module(loggy).
 
 -export([start/1, stop/1]).
 

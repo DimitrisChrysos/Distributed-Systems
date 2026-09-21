@@ -10,17 +10,19 @@ stop(Logger) ->
 init(Nodes) ->
     Clock = time:clock(Nodes),
     HoldbackQueue = [],
-    loop(Nodes, Clock, HoldbackQueue).
+    loop(Nodes, Clock, HoldbackQueue, 0).
 
-loop(Nodes, Clock, HoldbackQueue) ->
+loop(Nodes, Clock, HoldbackQueue, MaxQueueSize) ->
     receive
         {log, From, Time, Msg} ->
             UpdatedClock = time:update(From, Time, Clock),
             UpdatedHoldbackQueue = [{From, Time, Msg} | HoldbackQueue],
             {SafeQueue, UnsafeQueue} = get_safe_and_unsafe_queue(UpdatedClock, UpdatedHoldbackQueue),
+            UpdatedMaxQueueSize = erlang:max(MaxQueueSize, length(UnsafeQueue)),
             log_safe_queue(SafeQueue),
-            loop(Nodes, UpdatedClock, UnsafeQueue);
+            loop(Nodes, UpdatedClock, UnsafeQueue, UpdatedMaxQueueSize);
         stop ->
+            io:format("Maximum holdback queue size: ~p~n", [MaxQueueSize]),
             ok
     end.
 

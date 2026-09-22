@@ -3,7 +3,8 @@
 
 % report on your initial observations
 run(Sleep, Jitter) ->
-    Log = loggy:start(vector, [john, paul, ringo, george]),
+    % Log = loggy:start(vector, [john, paul, ringo, george]),
+    Log = loggy:start([john, paul, ringo, george]),
     A = worker:start(vector, john, Log, 13, Sleep, Jitter),
     B = worker:start(vector, paul, Log, 23, Sleep, Jitter),
     C = worker:start(vector, ringo, Log, 36, Sleep, Jitter),

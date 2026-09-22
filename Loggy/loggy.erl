@@ -1,22 +1,20 @@
 -module(loggy).
--export([start/1, stop/1, start/2]).
+-export([start/1, stop/1]).
 
 start(Nodes) ->
     spawn_link(fun() ->init(Nodes) end).
-
-start(vector, Nodes) ->
-    spawn_link(fun() -> init(vector, Nodes) end).
 
 stop(Logger) ->
     Logger ! stop.
 
 init(Nodes) ->
-    Clock = time:clock(Nodes),
+    % use time:clock(Nodes) for Lamport clocks and
+    % time:clock(vector, Nodes) for vector clocks
+
+    % Clock = time:clock(Nodes),
+    Clock = time:clock(vector, Nodes),
     HoldbackQueue = [],
     loop(Nodes, Clock, HoldbackQueue, 0).
-
-init(vector, Nodes) ->
-    loop(vector).
 
 loop(Nodes, Clock, HoldbackQueue, MaxQueueSize) ->
     receive
@@ -32,19 +30,14 @@ loop(Nodes, Clock, HoldbackQueue, MaxQueueSize) ->
             ok
     end.
 
-loop(vector) ->
-    receive
-        {log, From, Time, Msg} ->
-            log(From, Time, Msg),
-            loop(vector);
-        stop ->
-            ok
-    end.
-
 get_safe_and_unsafe_queue(Clock, Queue) ->
     lists:partition(
         fun({_From, Time, _Msg}) ->
-            time:safe(Time, Clock)
+            % use time:safe(Time, Clock) for Lamport clocks and
+            % time:safe(vector, Time, Clock) for vector clocks
+
+            % time:safe(Time, Clock)
+            time:safe(vector, Time, Clock)
         end,
         Queue
     ).

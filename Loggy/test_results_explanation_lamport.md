@@ -47,8 +47,6 @@ log: 8 john {received,{hello,40}}
 
     * Example: All `sending` events have a lower Lamport counter than the respective `received` events (for the same message of course). This is because the `sending` event triggers/causes the `received` event, and thus it will always happen before it. This of course also means that a `sending` event happens before any events after the corresponding `received` event (example: `sending` event of john with `LamportCounter=1` happened before paul's `sending` event with `LamportCounter=3`, since the latter event happened after the `received` event, which we already know happened after the original `sending` event of john - this is supported by the counters as 1 < 3).
 
-* If two events in different processes, `X` and `Y` have `LamportCounter(X) = LamportCounter(Y)`, the events are concurrent (we can't have`LamportCounter(X) = LamportCounter(Y)` for events in the same process since the counter increments).
-
 ### What is sometimes true?
 * In different processes, if we have event `X` in process A and event `Y` in process B (without a relation between the events - e.g. no message passing), with `LamportCounter(X) < LamportCounter(Y)`, it does not necessarily mean that X happened before Y. These events are considered concurrent (even though they might have not happened at the same time).
 

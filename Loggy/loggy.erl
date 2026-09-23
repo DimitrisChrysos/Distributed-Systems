@@ -1,49 +1,54 @@
 -module(loggy).
--export([start/1, stop/1]).
+-export([start/2, stop/1]).
 
-start(Nodes) ->
-    spawn_link(fun() ->init(Nodes) end).
+start(Nodes, TimeModule) ->
+    spawn_link(fun() ->init(Nodes, TimeModule) end).
 
 stop(Logger) ->
     Logger ! stop.
 
-init(Nodes) ->
-    % use time:clock(Nodes) for Lamport clocks and
-    % time:clock(vector, Nodes) for vector clocks
-
-    % Clock = time:clock(Nodes),
-    Clock = time:clock(vector, Nodes),
+init(Nodes, TimeModule) ->
+    Clock = TimeModule:clock(Nodes),
     HoldbackQueue = [],
-    loop(Nodes, Clock, HoldbackQueue, 0).
+    loop(Nodes, Clock, HoldbackQueue, 0, TimeModule).
 
-loop(Nodes, Clock, HoldbackQueue, MaxQueueSize) ->
+loop(Nodes, Clock, HoldbackQueue, MaxQueueSize, TimeModule) ->
     receive
         {log, From, Time, Msg} ->
-            UpdatedClock = time:update(From, Time, Clock),
+            UpdatedClock = TimeModule:update(From, Time, Clock),
+            print_new_unsafe_event(From, Time, Msg, UpdatedClock, TimeModule),
             UpdatedHoldbackQueue = [{From, Time, Msg} | HoldbackQueue],
-            {SafeQueue, UnsafeQueue} = get_safe_and_unsafe_queue(UpdatedClock, UpdatedHoldbackQueue),
+            {SafeQueue, UnsafeQueue} = get_safe_and_unsafe_queue(UpdatedClock, UpdatedHoldbackQueue, TimeModule),
             UpdatedMaxQueueSize = erlang:max(MaxQueueSize, length(UnsafeQueue)),
-            log_safe_queue(SafeQueue),
-            loop(Nodes, UpdatedClock, UnsafeQueue, UpdatedMaxQueueSize);
+            log_safe_queue(SafeQueue, TimeModule),
+            loop(Nodes, UpdatedClock, UnsafeQueue, UpdatedMaxQueueSize, TimeModule);
         stop ->
             io:format("Maximum holdback queue size: ~p~n", [MaxQueueSize]),
             ok
     end.
 
-get_safe_and_unsafe_queue(Clock, Queue) ->
+print_new_unsafe_event(From, Time, Msg, UpdatedClock, TimeModule) ->
+    case TimeModule:safe(Time, UpdatedClock) of
+        false ->
+            io:format("queued: ~p ~p ~p~n", [From, Time, Msg]);
+        true ->
+            ok
+    end.
+
+get_safe_and_unsafe_queue(Clock, Queue, TimeModule) ->
     lists:partition(
         fun({_From, Time, _Msg}) ->
-            % use time:safe(Time, Clock) for Lamport clocks and
-            % time:safe(vector, Time, Clock) for vector clocks
-
-            % time:safe(Time, Clock)
-            time:safe(vector, Time, Clock)
+            TimeModule:safe(Time, Clock)
         end,
         Queue
     ).
 
-log_safe_queue(SafeQueue) ->
-    OrderedSafe = lists:keysort(2, SafeQueue),
+log_safe_queue(SafeQueue, TimeModule) ->
+    RankedSafe = lists:map(
+        fun({_, Time, _} = Event) -> {TimeModule:rank(Time), Event} end,
+        SafeQueue
+    ),
+    OrderedSafe = [Event || {_Rank, Event} <- lists:keysort(1, RankedSafe)],
     lists:foreach(
         fun({From, Time, Msg}) -> log(From, Time, Msg) end, OrderedSafe
     ).

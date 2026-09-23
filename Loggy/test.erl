@@ -3,11 +3,11 @@
 
 % report on your initial observations
 run(Sleep, Jitter) ->
-    Log = loggy:start([john, paul, ringo, george]),
-    A = worker:start(john, Log, 13, Sleep, Jitter),
-    B = worker:start(paul, Log, 23, Sleep, Jitter),
-    C = worker:start(ringo, Log, 36, Sleep, Jitter),
-    D = worker:start(george, Log, 49, Sleep, Jitter),
+    Log = loggy:start([john, paul, ringo, george], time),
+    A = worker:start(john, Log, 13, Sleep, Jitter, time),
+    B = worker:start(paul, Log, 23, Sleep, Jitter, time),
+    C = worker:start(ringo, Log, 36, Sleep, Jitter, time),
+    D = worker:start(george, Log, 49, Sleep, Jitter, time),
     worker:peers(A, [B, C, D]),
     worker:peers(B, [A, C, D]),
     worker:peers(C, [A, B, D]),

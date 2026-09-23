@@ -8,7 +8,6 @@ run(Sleep, Jitter) ->
     B = worker:start(paul, Log, 23, Sleep, Jitter, vect),
     C = worker:start(ringo, Log, 36, Sleep, Jitter, vect),
     D = worker:start(george, Log, 49, Sleep, Jitter, vect),
-    io:format("john=~w, paul=~w, ringo=~w, george=~w~n", [A, B, C, D]),
     worker:peers(A, [B, C, D]),
     worker:peers(B, [A, C, D]),
     worker:peers(C, [A, B, D]),

@@ -44,13 +44,14 @@ get_safe_and_unsafe_queue(Clock, Queue, TimeModule) ->
     ).
 
 log_safe_queue(SafeQueue, TimeModule) ->
-    RankedSafe = lists:map(
-        fun({_, Time, _} = Event) -> {TimeModule:rank(Time), Event} end,
+    % sort the elements based on their time value
+    OrderedSafe = lists:sort(
+        fun({_, TimeA, _}, {_, TimeB, _}) -> TimeModule:leq(TimeA, TimeB) end,
         SafeQueue
     ),
-    OrderedSafe = [Event || {_Rank, Event} <- lists:keysort(1, RankedSafe)],
     lists:foreach(
-        fun({From, Time, Msg}) -> log(From, Time, Msg) end, OrderedSafe
+        fun({From, Time, Msg}) -> log(From, Time, Msg) end,
+        OrderedSafe
     ).
 
 log(From, Time, Msg) ->

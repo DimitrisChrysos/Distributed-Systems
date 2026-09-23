@@ -1,5 +1,5 @@
 -module(time).
--export([zero/0, inc/2, leq/2, merge/2, clock/1, update/3, safe/2, rank/1]).
+-export([zero/0, inc/2, leq/2, merge/2, clock/1, update/3, safe/2]).
 
 % return an initial Lamport value (could it be 0)
 zero() -> 0.
@@ -30,7 +30,3 @@ update(Node, Time, Clock) ->
 % is it safe to log an event that happened at a given time, true or false?
 safe(Time, Clock) ->
     lists:all(fun(NodeTime) -> leq(Time, NodeTime) end, maps:values(Clock)).
-
-% A Lamport timestamp is its own ordering rank used for sorting in log_safe_queue.
-rank(Time) ->
-    Time.

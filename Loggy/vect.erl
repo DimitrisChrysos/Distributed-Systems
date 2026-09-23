@@ -1,5 +1,5 @@
 -module(vect).
--export([zero/0, inc/2, merge/2, leq/2, clock/1, update/3, safe/2]).
+-export([zero/0, inc/2, merge/2, leq/2, clock/1, update/3, safe/2, rank/1]).
 
 % Time is a list of {ProcessName, Counter} tuples (e.g. [] or [{john,2}, {paul,4}])
 
@@ -29,7 +29,7 @@ leq([], _) ->
 leq([{Name, Ti} | Rest],Time) ->
     case lists:keyfind(Name, 1, Time) of
         {Name, Tj} ->
-            if
+            if 
                 Ti =< Tj ->
                     leq(Rest, Time);
                 true ->
@@ -52,3 +52,8 @@ update(From, Time, Clock) ->
 
 safe(Time, Clock) ->
     leq(Time, Clock).
+
+% A causally later vector has no smaller counters and at least one larger
+% counter, so its counter sum is strictly greater and preserves causal order.
+rank(Vector) ->
+    lists:sum([Counter || {_Name, Counter} <- Vector]).

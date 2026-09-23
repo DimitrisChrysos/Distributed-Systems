@@ -20,7 +20,7 @@ loop(Nodes, Clock, HoldbackQueue, MaxQueueSize, TimeModule) ->
             UpdatedHoldbackQueue = [{From, Time, Msg} | HoldbackQueue],
             {SafeQueue, UnsafeQueue} = get_safe_and_unsafe_queue(UpdatedClock, UpdatedHoldbackQueue, TimeModule),
             UpdatedMaxQueueSize = erlang:max(MaxQueueSize, length(UnsafeQueue)),
-            log_safe_queue(SafeQueue),
+            log_safe_queue(SafeQueue, TimeModule),
             loop(Nodes, UpdatedClock, UnsafeQueue, UpdatedMaxQueueSize, TimeModule);
         stop ->
             io:format("Maximum holdback queue size: ~p~n", [MaxQueueSize]),
@@ -43,8 +43,12 @@ get_safe_and_unsafe_queue(Clock, Queue, TimeModule) ->
         Queue
     ).
 
-log_safe_queue(SafeQueue) ->
-    OrderedSafe = lists:keysort(2, SafeQueue),
+log_safe_queue(SafeQueue, TimeModule) ->
+    RankedSafe = lists:map(
+        fun({_, Time, _} = Event) -> {TimeModule:rank(Time), Event} end,
+        SafeQueue
+    ),
+    OrderedSafe = [Event || {_Rank, Event} <- lists:keysort(1, RankedSafe)],
     lists:foreach(
         fun({From, Time, Msg}) -> log(From, Time, Msg) end, OrderedSafe
     ).

@@ -40,8 +40,8 @@ leader(Id, Master, Slaves, Group) ->
             ok
     end.
 
-bcast(Id, Message, Slaves) ->
-    lists:foreach(fun({Pid, _, _, _}) -> Pid ! Message end, Slaves).
+bcast(_Id, Message, Slaves) ->
+    lists:foreach(fun(Pid) -> Pid ! Message end, Slaves).
 
 slave(Id, Master, Leader, Slaves, Group) ->
     receive

@@ -1,5 +1,5 @@
 -module(gui).
--define(width, 200).
+-define(width, 400).
 -define(height, 200).
 -export([start/2]).
 -include_lib("wx/include/wx.hrl").
@@ -27,7 +27,7 @@ loop(Window, Master)->
     receive
 	%% check if the window was closed by the user
 	#wx{event=#wxClose{}} ->
-	    wxWindow:destroy(Window),  
+	    wxWindow:destroy(Window),
 	    Master ! stop,
 	    ok;
 	{color, Color} ->

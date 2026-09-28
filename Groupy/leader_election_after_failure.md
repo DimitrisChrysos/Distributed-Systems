@@ -41,7 +41,7 @@ The coordination of the nodes does not stop (same colors still appear from every
 You can kill the *new* leader to watch the process repeat:
 
 ```erlang
-6> <0.284.0> ! stop.
+6> <0.283.0> ! stop.
 3 received down from <0.284.0>
 stop
 3 becomes the new leader

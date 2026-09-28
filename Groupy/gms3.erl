@@ -82,7 +82,7 @@ slave(Id, Master, Leader, N, Last, Slaves, Group) ->
             slave(Id, Master, Leader, N + 1, {msg, N, Msg}, Slaves, Group);
         {view, N, [Leader | Slaves2], Group2} ->
             Master ! {view, Group2},
-            slave(Id, Master, Leader,  N, Last, Slaves2, Group2);
+            slave(Id, Master, Leader,  N + 1, {view, N, [Leader | Slaves2], Group2}, Slaves2, Group2);
         {'DOWN', _Ref, process, Leader, _Reason} ->
             io:format("~w received down from ~w~n", [Id, Leader]),
             election(Id, Master, Slaves,  N, Last, Group);

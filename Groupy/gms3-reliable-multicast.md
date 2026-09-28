@@ -97,26 +97,26 @@ Node 3 gets elected, resends `N=59`, and Node 4 successfully catches up.
 
 * `gms3_test.erl` also showcases the dynamic addition of new nodes, and how they can stay coordinated with the already existing nodes.
 
-In the following logs of the execution of `gms3_test.erl`, we can see a case where the leader (node 3) crashed, after the broadcasting was done (all nodes received the latest message). This makes nodes 5 and 6 disregard the re-broadcasted message from node 4 (new leader).
+In the following logs of the execution of `gms3_test.erl`, we can see a case where the leader (node 3) crashed, after the full broadcasting was done (all nodes received the latest message). This makes nodes 5 and 6 disregard the re-broadcasted message from node 4 (new leader).
 
 ```text
 ...
-4 received NEW message: {change,9} (N=76)
-5 received NEW message: {change,9} (N=76)
-6 received NEW message: {change,9} (N=76)
+4 received NEW message: {change,17} (N=74)
+5 received NEW message: {change,17} (N=74)
+6 received NEW message: {change,17} (N=74)
 leader 3: crash
-4 received NEW message: {change,5} (N=77)
-5 received NEW message: {change,5} (N=77)
-6 received NEW message: {change,5} (N=77)
-4 received down from <0.138.0>
-5 received down from <0.138.0>
-6 received down from <0.138.0>
+4 received NEW message: {change,15} (N=75)
+5 received NEW message: {change,15} (N=75)
+6 received NEW message: {change,15} (N=75)
+4 received down from <0.143.0>
+5 received down from <0.143.0>
+6 received down from <0.143.0>
 4 becomes the new leader
-5 is monitoring new Leader: <0.142.0>
-6 is monitoring new Leader: <0.142.0>
-4 broadcasting Last Message: {msg,77,{change,5}}
-5 received old message: (I=77, N=78)
-6 received old message: (I=77, N=78)
+5 is monitoring new Leader: <0.147.0>
+6 is monitoring new Leader: <0.147.0>
+4 broadcasting Last Message: {msg,75,{change,15}}
+5 received old message: (I=75, N=76)
+6 received old message: (I=75, N=76)
 ...
 ```
 

@@ -3,7 +3,7 @@
 -export([start/1, start/2]).
 
 -define(timeout, 5000).
--define(arghh, 3).
+-define(arghh, 100).
 
 % start the first node in the group
 start(Id) ->

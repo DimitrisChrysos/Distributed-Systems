@@ -60,3 +60,6 @@ If we were to run the workers using the `gms1` module, no election would happen 
 56> <0.299.0> ! stop.
 stop
 ```
+
+---
+## To test the leader reelection implementation, run `gms2_test.erl`

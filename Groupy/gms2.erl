@@ -3,21 +3,26 @@
 -export([start/1, start/2]).
 
 -define(timeout, 5000).
+-define(arghh, 3).
 
 % start the first node in the group
 start(Id) ->
+    Rnd = random:uniform(1000),
     Self = self(),
-    {ok, spawn_link(fun() -> init(Id, Self) end)}.
+    {ok, spawn_link(fun() -> init(Id, Rnd, Self) end)}.
 
-init(Id, Master) ->
+init(Id, Rnd, Master) ->
+    random:seed(Rnd, Rnd, Rnd),
     leader(Id, Master, [], [Master]).
 
 % start a node that will join a group
 start(Id, Grp) ->
+    Rnd = random:uniform(1000),
     Self = self(),
-    {ok, spawn_link(fun() -> init(Id, Grp, Self) end)}.
+    {ok, spawn_link(fun() -> init(Id, Grp, Rnd, Self) end)}.
 
-init(Id, Grp, Master) ->
+init(Id, Grp, Rnd, Master) ->
+    random:seed(Rnd, Rnd, Rnd),
     Self = self(),
     Grp ! {join, Master, Self},
     receive
@@ -45,8 +50,18 @@ leader(Id, Master, Slaves, Group) ->
             ok
     end.
 
-bcast(_Id, Message, Slaves) ->
-    lists:foreach(fun(Pid) -> Pid ! Message end, Slaves).
+bcast(Id, Message, Slaves) ->
+    % lists:foreach(fun(Pid) -> Pid ! Message end, Slaves).
+    lists:foreach(fun(Node) -> Node ! Message, crash(Id) end, Slaves).
+
+crash(Id) ->
+    case random:uniform(?arghh) of
+        ?arghh ->
+            io:format("leader ~w: crash~n", [Id]),
+            exit(no_luck);
+        _ ->
+            ok
+    end.
 
 slave(Id, Master, Leader, Slaves, Group) ->
     receive

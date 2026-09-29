@@ -4,10 +4,14 @@
 run() ->
     io:format("~n=== GMS2 missing-message demo ===~n"),
 
-    %% Avoid random colour changes until all four nodes have joined.
-    InitialSleep = 100000,
-    W1 = test:more(4, gms2, InitialSleep),
-    timer:sleep(2000),
+    W1 = test:first(1, gms2, 100000),
+    timer:sleep(1000),
+    _W2 = test:add(2, gms2, W1, 100000),
+    timer:sleep(1000),
+    _W3 = test:add(3, gms2, W1, 100000),
+    timer:sleep(1000),
+    _W4 = test:add(4, gms2, W1, 100000),
+    timer:sleep(1000),
 
     io:format("Group ready. Increasing traffic to trigger a leader crash...~n"),
     test:sleep(W1, 1000),

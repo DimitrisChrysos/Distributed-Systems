@@ -1,6 +1,6 @@
-# GMS3 simple-test output explained
+# GMS3: Reliable multicast with fixed amount of workers
 
-Source: `gms3_simple_test_results.txt`.
+Source: `gms3_simple_test_results.txt`, produced by `gms3_simple_test.erl`.
 
 ## Group setup and state transfer
 
@@ -38,16 +38,16 @@ The terminal may print node 3 before node 2 (in an N sequence) because Erlang pr
 
 ```text
 leader 1: crash
-2 received NEW message: {change,13} (N=35) 
-3 received NEW message: {change,13} (N=35) 
+2 received NEW message: {change,13} (N=35)
+3 received NEW message: {change,13} (N=35)
 2 received down from <0.97.0>
 3 received down from <0.97.0>
 2 becomes the new leader
 3 is monitoring new Leader: <0.103.0>
 2 broadcasting Last Message: {msg,35,{change,13}}
-3 received old message: (I=35, N=36) 
-3 received NEW message: {change,7} (N=36) 
-3 received NEW message: {change,11} (N=37) 
+3 received old message: (I=35, N=36)
+3 received NEW message: {change,7} (N=36)
+3 received NEW message: {change,11} (N=37)
 ```
 
 Both slaves had already received message `N=35` so the leader crashed after completing that broadcast. Node 2 becomes leader and rebroadcasts its last message. Node 3 already expects `N=36`, so it recognises the replayed `N=35` as a duplicate and ignores it.
@@ -58,7 +58,7 @@ After node 2 becomes leader, only node 3 prints delivery logs because node 2 del
 
 ```text
 leader 2: crash
-3 received NEW message: {change,17} (N=103) 
+3 received NEW message: {change,17} (N=103)
 3 received down from <0.103.0>
 3 becomes the new leader
 3 broadcasting Last Message: {msg,103,{change,17}}

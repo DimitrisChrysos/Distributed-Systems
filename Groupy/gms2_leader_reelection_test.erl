@@ -1,4 +1,4 @@
--module(gms2_test).
+-module(gms2_leader_reelection_test).
 -export([run/0]).
 
 run() ->

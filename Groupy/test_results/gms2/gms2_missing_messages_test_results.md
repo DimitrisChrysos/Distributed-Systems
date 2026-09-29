@@ -1,4 +1,4 @@
-# GMS2 missing-message test output explained
+# GMS2: Missing-message test output explained
 
 Source: `gms2_missing_messages_test_results.txt`, produced by `gms2_missing_messages_test.erl`.
 
@@ -6,7 +6,7 @@ Source: `gms2_missing_messages_test_results.txt`, produced by `gms2_missing_mess
 
 The workers join one at a time:
 
-- `W1` is initially the leader, so it does not print a `NEW view` line. 
+- `W1` is initially the leader, so it does not print a `NEW view` line.
 - The repeated state messages are replies from existing workers that give each joining worker the initial colour `{0,0,0}`.
 - `{sleep,1000}` then makes the workers generate colour more often to trigger a crash faster.
 
@@ -47,6 +47,6 @@ Leader 3 eventually crashes. Worker 4 is the only remaining worker, so it become
 ## Result: why workers become out of sync
 
 - Later colour changes are delivered to all surviving workers, but they are applied to different previous colours.
-- Worker 2 has `{change,8}` while workers 3 and 4 do not. 
+- Worker 2 has `{change,8}` while workers 3 and 4 do not.
 - Worker 3 also has `{change,13}` while worker 4 does not.
 - `gms2` elects a new leader, but it never retransmits the interrupted message, so the workers keep different message histories and colour states.

@@ -1,4 +1,6 @@
-# Running the GMS2 Group Membership Service
+# GMS2: Leader re-election
+
+produced by `gms2_leader_reelection_test.erl`.
 
 ## 1. Starting the Leader Node
 Initialize the first worker. Because it is the first node, it automatically becomes the leader of the group.
@@ -60,6 +62,3 @@ If we were to run the workers using the `gms1` module, no election would happen 
 56> <0.299.0> ! stop.
 stop
 ```
-
----
-## To test the leader reelection implementation, run `gms2_test.erl`

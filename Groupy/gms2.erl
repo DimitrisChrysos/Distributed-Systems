@@ -37,6 +37,7 @@ init(Id, Grp, Rnd, Master) ->
 leader(Id, Master, Slaves, Group) ->
     receive
         {mcast, Msg} ->
+            io:format("leader ~w multicasting ~p~n", [Id, Msg]),
             bcast(Id, {msg, Msg}, Slaves),
             Master ! Msg,
             leader(Id, Master, Slaves, Group);
@@ -52,7 +53,14 @@ leader(Id, Master, Slaves, Group) ->
 
 bcast(Id, Message, Slaves) ->
     % lists:foreach(fun(Pid) -> Pid ! Message end, Slaves).
-    lists:foreach(fun(Node) -> Node ! Message, crash(Id) end, Slaves).
+    lists:foreach(
+        fun(Node) ->
+            io:format("leader ~w sends ~p to ~p~n", [Id, Message, Node]),
+            Node ! Message,
+            crash(Id)
+        end,
+        Slaves
+    ).
 
 crash(Id) ->
     case random:uniform(?arghh) of
@@ -72,6 +80,7 @@ slave(Id, Master, Leader, Slaves, Group) ->
             Leader ! {join, Wrk, Peer},
             slave(Id, Master, Leader, Slaves, Group);
         {msg, Msg} ->
+            io:format("node ~w delivered ~p~n", [Id, Msg]),
             Master ! Msg,
             slave(Id, Master, Leader, Slaves, Group);
         {view, [Leader | Slaves2], Group2} ->

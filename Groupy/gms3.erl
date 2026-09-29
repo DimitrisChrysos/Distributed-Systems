@@ -27,9 +27,10 @@ init(Id, Grp, Rnd, Master) ->
     Grp ! {join, Master, Self},
     receive
         {view, N, [Leader | Slaves], Group} ->
+            io:format("~w received NEW view: ~p (N=~w)~n", [Id, Group, N]),
             erlang:monitor(process, Leader),
             Master ! {view, Group},
-            slave(Id, Master, Leader, N, {}, Slaves, Group)
+            slave(Id, Master, Leader, N + 1, {view, N, [Leader | Slaves], Group}, Slaves, Group)
     after ?timeout ->
         Master ! {error, "no reply from leader"}
     end.
@@ -45,7 +46,7 @@ leader(Id, Master, N, Slaves, Group) ->
             Group2 = lists:append(Group, [Wrk]),
             bcast(Id, {view, N, [self() | Slaves2], Group2}, Slaves2),
             Master ! {view, Group2},
-            leader(Id, Master, N, Slaves2, Group2);
+            leader(Id, Master, N + 1, Slaves2, Group2);
         stop ->
             ok
     end.
@@ -80,7 +81,11 @@ slave(Id, Master, Leader, N, Last, Slaves, Group) ->
             % new message: save it as Last and increment N
             Master ! Msg,
             slave(Id, Master, Leader, N + 1, {msg, N, Msg}, Slaves, Group);
+        {view, I, _, _} when I < N ->
+            io:format("~w received old view: (I=~w, N=~w) ~n", [Id, I, N]),
+            slave(Id, Master, Leader, N, Last, Slaves, Group);
         {view, N, [Leader | Slaves2], Group2} ->
+            io:format("~w received NEW view: ~p (N=~w)~n", [Id, Group2, N]),
             Master ! {view, Group2},
             slave(Id, Master, Leader,  N + 1, {view, N, [Leader | Slaves2], Group2}, Slaves2, Group2);
         {'DOWN', _Ref, process, Leader, _Reason} ->

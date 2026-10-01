@@ -17,7 +17,7 @@ The leader waits for all acknowledgements before broadcasting sequence `N + 1`. 
 
 **Broadcast cost**
   - Current broadcast with `k` workers: about `k - 1` sends.
-  - With acknowledgements: about `2(k - 1)` sends—one message and one acknowledgement for each slave.
+  - With acknowledgements: about `2(k - 1)` sends-one message and one acknowledgement for each slave.
 
 **Retransmissions**
   - If the leader times out while waiting for a worker's acknowledgement, it retransmits the message.

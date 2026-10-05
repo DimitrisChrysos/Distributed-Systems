@@ -3,7 +3,7 @@
 ## 1.3
 
 ### Does it matter that key:between/3 allows the key Xkey to be equal to Skey?
-In our implementation, it matters because if Xkey = Skey, it would seem as if the successor of a node is pointing at itself, making the node notify it about its existence. But, when our successor receives the message, it would disregard it since it will see that `key:between(Nodekey, Pkey, Id)` reuturns false (because the node is not between us and our predecessor that has the same identifier).
+In our implementation, it matters because if Xkey = Skey, it would seem as if the successor of a node is pointing at itself (since we dont check the PID in `stabilize()`: `{Skey, _} ->`), making the node notify it about its existence. But, when our successor receives the message, it would disregard it since it will see that `key:between(Nodekey, Pkey, Id)` reuturns false (because the node is not between us and our predecessor that has the same identifier).
 
 ### What does it mean that Xkey is equal to Skey?
 For this case, if Xkey = Skey, it would mean that the identifier of the predecessor (Xkey) of our successor is the same as our successors' (Skey). Since we generate the identifiers using a random function, this would happen only if the function returned the same number (identifier) for both nodes. So we would have two nodes with different Pids but same identifiers, meaning the same spot in the identifier domain circle.

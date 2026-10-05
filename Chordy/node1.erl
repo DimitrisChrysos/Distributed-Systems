@@ -22,6 +22,39 @@ node(Id, Predecessor, Successor) ->
             node(Id, Predecessor, Successor)
     end.
 
+stabilize(Pred, Id, Successor) ->
+    {Skey, Spid} = Successor,
+    case Pred of
+        nil ->
+            %
+            % successor is not pointing to a predecessor - notify it about our existence
+            Spid ! {notify, {Id, self()}},
+            Successor;
+        {Id, _} ->
+            %
+            % successor points back at us - no need to do anything
+            Successor;
+        {Skey, _} ->
+            %
+            % successor points to itself - notify them about our existence
+            Spid ! {notify, {Id, self()}},
+            Successor;
+        {Xkey, _Xpid} ->
+            % successor points to a different node
+            case key:between(Xkey, Id, Skey) of
+                true ->
+                    %
+                    % node is between us and successor - adopt the node as our successor
+                    % we use nil in order to notify the node about our existence.
+                    % maybe it would be better to pass its real predeccesor (do we know it?).
+                    stabilize(nil, Id, Pred);
+                false ->
+                    %
+                    % node is before us - notify successor about our existence
+                    Spid ! {notify, {Id, self()}}
+            end
+    end.
+
 schedule_stabilize() ->
     timer:send_interval(?Stabilize, self(), stabilize).
 

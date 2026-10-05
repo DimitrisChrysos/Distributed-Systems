@@ -22,8 +22,34 @@ node(Id, Predecessor, Successor) ->
             node(Id, Predecessor, Succ);
         stabilize ->
             stabilize(Successor),
+            node(Id, Predecessor, Successor);
+        probe ->
+            create_probe(Id, Successor),
+            node(Id, Predecessor, Successor);
+        {probe, Id, Nodes, T} ->
+            remove_probe(T, Nodes),
+            node(Id, Predecessor, Successor);
+        {probe, Ref, Nodes, T} -> 
+            forward_probe(Ref, T, Nodes, Id, Successor),
             node(Id, Predecessor, Successor)
     end.
+
+create_probe(Id, Successor) ->
+    {_, Spid} = Successor,
+    Spid ! {probe, Id, [self()], erlang:system_time(microsecond)}.
+
+remove_probe(T, Nodes) ->
+    ElapsedTime = erlang:system_time(microsecond) - T,
+    io:format("Total probe round-trip duration: ~p microseconds~n", [ElapsedTime]),
+    io:format("Round trip probe nodes: ~p~n", [Nodes]).
+
+forward_probe(Ref, T, Nodes, _Id, Successor) ->
+    {_, Spid} = Successor,
+    ElapsedTime = erlang:system_time(microsecond) - T,
+    io:format("Elapsed probe duration: ~p microseconds~n", [ElapsedTime]),
+    io:format("Current round trip probe nodes: ~p~n", [Nodes]),
+    Spid ! {probe, Ref, [self() | Nodes], T}.
+
 
 stabilize(Pred, Id, Successor) ->
     {Skey, Spid} = Successor,

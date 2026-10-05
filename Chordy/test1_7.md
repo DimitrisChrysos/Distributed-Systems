@@ -77,7 +77,7 @@ Total probe round-trip duration: 468 microseconds
 Round trip probe nodes: [<0.95.0>,<0.91.0>,<0.87.0>]
 8> 
 ```
-
+Note:
 If the output contains fewer than three nodes, wait a few seconds and send `P1 ! probe.` again. Nodes join asynchronously and need time to stabilize.
 
 ## 4. Test two terminals on the same computer
@@ -193,4 +193,32 @@ timer:sleep(2500).
 P2 ! probe.
 ```
 
-Expected result: the probe returns to `P2` after visiting both nodes. Each computer prints output for its own process; the other process is displayed as a remote PID.
+### Results
+```sh
+(chord_a@130.229.159.9)1> P1 = node1:start(10).
+<0.93.0>
+(chord_a@130.229.159.9)2> register(chord1, P1).
+true
+Elapsed probe duration: -39684 microseconds
+Current round trip probe nodes: [<11589.99.0>]
+(chord_a@130.229.159.9)3> 
+```
+
+```sh
+(chord_b@130.229.191.255)4> Peer = {chord1, 'chord_a@130.229.159.9'}.
+{chord1,'chord_a@130.229.159.9'}
+(chord_b@130.229.191.255)5> P2 = node1:start(20, Peer).
+<0.99.0>
+(chord_b@130.229.191.255)6> timer:sleep(2500).
+ok
+(chord_b@130.229.191.255)7> P2 ! probe.
+probe
+Total probe round-trip duration: 8951 microseconds
+Round trip probe nodes: [<10550.93.0>,<0.99.0>]
+```
+
+Note:
+- The cross-computer test succeeded.
+- P2 connected to P1 using the registered node name and shared cookie then a probe travelled through both nodes and returned to its origin.
+- The negative intermediate time on computer A is caused by small differences between the two computers system clocks.
+- The final round-trip time measured on the originating node is valid, because both timestamps of the calculation come from the same computer system clock.

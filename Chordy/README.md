@@ -1,5 +1,16 @@
 # Questions in tasks
 
+## 1.3
+
+### Does it matter that key:between/3 allows the key Xkey to be equal to Skey?
+In our implementation, it matters because if Xkey = Skey, it would seem as if the successor of a node is pointing at itself, making the node notify it about its existence. But, when our successor receives the message, it would disregard it since it will see that `key:between(Nodekey, Pkey, Id)` reuturns false (because the node is not between us and our predecessor that has the same identifier).
+
+### What does it mean that Xkey is equal to Skey?
+For this case, if Xkey = Skey, it would mean that the identifier of the predecessor (Xkey) of our successor is the same as our successors' (Skey). Since we generate the identifiers using a random function, this would happen only if the function returned the same number (identifier) for both nodes. So we would have two nodes with different Pids but same identifiers, meaning the same spot in the identifier domain circle.
+
+### Will Xkey be ever equal to Skey?
+In our case, this would only happen if the random function we use returned the same number (identifier) for two nodes. Since the chance of this happening is about 1/1_000_000_000 (since we use uniform random numbers) for every two nodes, we can can say that this scenario is not plausible when our ring is small. As the number of nodes increases though, the chance of having a collision also increases. This is a problem that also exists in hash functions (but certain functions handle it better), but it wouldn't happen if we implemented the correct chord scheme and used the IP of a node to calculate its identifier (instead of drawing a random number each time).
+
 ## 1.4
 
 ### What are the pros and cons of a more frequent stabilizing procedure?

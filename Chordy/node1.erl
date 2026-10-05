@@ -52,7 +52,8 @@ stabilize(Pred, Id, Successor) ->
                 false ->
                     %
                     % node is before us - notify successor about our existence
-                    Spid ! {notify, {Id, self()}}
+                    Spid ! {notify, {Id, self()}},
+                    Successor
             end
     end.
 

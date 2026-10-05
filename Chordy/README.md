@@ -37,3 +37,13 @@ If rejected, the new node does not learn that immediately. Its periodic stabiliz
 - it asks its successor for predecessor information,
 - adjusts its successor when necessary,
 - and eventually the ring converges to the correct links.
+
+## 1.6
+
+### What would happen if we didn’t schedule the stabilize procedure? Would things still work?
+
+Without scheduled stabilization, nodes would not periodically try to stabilize by asking their successors for predecessor information so we could not find if they have a new predecessor.
+
+A newly joined node might initially connect, but the other nodes would not be able to reliably update their successor and predecessor pointers. So the ring could be incomple or outdated and the routing could be incorrect.
+
+A single-node ring would still work, but with more nodes the ring would not reliably converge to correctness without stabilization happening.

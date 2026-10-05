@@ -1,6 +1,8 @@
 -module(node1).
+-export([start/1, start/2]).
 
 -define(Stabilize, 1000).
+-define(Timeout, 10000).
 
 % Node state: Id, Predecessor (nil | {PredKey, PredPid}), and Successor ({SuccKey, SuccPid}).
 
@@ -82,4 +84,28 @@ notify({Nkey, Npid}, Id, Predecessor) ->
                 false ->
                     Predecessor
             end
+    end.
+
+start(Id) ->
+    start(Id, nil).
+
+start(Id, Peer) ->
+    timer:start(),
+    spawn(fun() -> init(Id, Peer) end).
+
+init(Id, Peer) ->
+    Predecessor = nil,
+    {ok, Successor} = connect(Id, Peer), % we might need to handle the error case here too instead of just printing the error
+    schedule_stabilize(),
+    node(Id, Predecessor, Successor).
+
+connect(Id, nil) ->
+    {ok, {Id, self()}};
+connect(_Id, Peer) ->
+    Qref = make_ref(),
+    Peer ! {key, Qref, self()},
+    receive {Qref, Skey} ->
+        {ok, {Skey, Peer}}
+    after ?Timeout ->
+        io:format("Time out: no response~n",[])
     end.

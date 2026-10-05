@@ -1,4 +1,5 @@
 -module(node1).
+
 -define(Stabilize, 1000).
 
 % Node state: Id, Predecessor (nil | {PredKey, PredPid}), and Successor ({SuccKey, SuccPid}).
@@ -67,4 +68,17 @@ request(Peer, Predecessor) ->
             Peer ! {status, nil};
         {Pkey, Ppid} ->
             Peer ! {status, {Pkey, Ppid}}
+    end.
+
+notify({Nkey, Npid}, Id, Predecessor) -> 
+    case Predecessor of
+        nil ->
+            {Nkey, Npid};
+        {Pkey, _} ->
+            case key:between(Nkey, Pkey, Id) of
+                true ->
+                    {Nkey, Npid};
+                false ->
+                    Predecessor
+            end
     end.

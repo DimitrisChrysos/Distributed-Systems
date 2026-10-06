@@ -60,8 +60,15 @@ forward_probe(Ref, T, Nodes, _Id, Successor) ->
 add(Key, Value, Qref, Client, Id, Predecessor, Successor, Store) ->
     [].
 
-lookup(Key, Qref, Client, Id, Predecessor, Successor, Store) ->
-    [].
+lookup(Key, Qref, Client, Id, {Pkey, _}, Successor, Store) ->
+    case key:between(Key, Pkey, Id) of
+        true ->
+            Result = storage:lookup(Key, Store),
+            Client ! {Qref, Result};
+        false ->
+            {_, Spid} = Successor,
+            Spid ! {lookup, Key, Qref, Client}
+    end.
 
 stabilize(Pred, Id, Successor) ->
     {Skey, Spid} = Successor,

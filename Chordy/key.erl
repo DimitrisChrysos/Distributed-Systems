@@ -5,7 +5,6 @@
 generate() ->
     rand:uniform(1_000_000_000).
 
-
 between(_Key, From, To) when From == To ->
     true; % anything is in between
 between(Key, From, To) when From < To ->

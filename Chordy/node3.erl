@@ -40,7 +40,10 @@ node(Id, Predecessor, Successor, Next, Store) ->
             node(Id, Predecessor, Successor, Next, Store);
         {handover, Elements} ->
             Merged = storage:merge(Store, Elements),
-            node(Id, Predecessor, Successor, Next, Merged)
+            node(Id, Predecessor, Successor, Next, Merged);
+        {'DOWN', Ref, process, _, _} ->
+            {Pred, Succ, Nxt} = down(Ref, Predecessor, Successor, Next),
+            node(Id, Pred, Succ, Nxt, Store)
     end.
 
 create_probe(Id, Successor) ->
@@ -189,3 +192,10 @@ drop(nil) ->
     ok;
 drop(Ref) ->
     erlang:demonitor(Ref, [flush]).
+
+down(Ref, {_, Ref, _}, Successor, Next) ->
+    {nil, Successor, Next};
+down(Ref, Predecessor, {_, Ref, _}, {Nkey, Npid}) ->
+    Nref = monitor(Npid),
+    self() ! stabilize,
+    {Predecessor, {Nkey, Nref, Npid}, nil}.

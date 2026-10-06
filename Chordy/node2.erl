@@ -63,11 +63,11 @@ forward_probe(Ref, T, Nodes, _Id, Successor) ->
 add(Key, Value, Qref, Client, Id, {Pkey, _}, {_, Spid}, Store) ->
     case key:between(Key, Pkey, Id) of
         true ->
-            io:format("~w (~w) is responsible for key ~w~n", [Id, self(), Key]),
+            % io:format("~w (~w) is responsible for key ~w~n", [Id, self(), Key]),
             Client ! {Qref, ok},
             storage:add(Key, Value, Store);
         false ->
-            io:format("~w (~w) sends key-value to ~w~n", [Id, self(), Spid]),
+            % io:format("~w (~w) sends key-value to ~w~n", [Id, self(), Spid]),
             Spid ! {add, Key, Value, Qref, Client},
             Store
     end.

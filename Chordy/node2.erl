@@ -62,7 +62,7 @@ add(Key, Value, Qref, Client, Id, {Pkey, _}, {_, Spid}, Store) ->
         true ->
             io:format("~w (~w) is responsible for key ~w~n", [Id, self(), Key]),
             Client ! {Qref, ok},
-            [{Key, Value} | Store];
+            storage:add(Key, Value, Store);
         false ->
             io:format("~w (~w) sends key-value to ~w~n", [Id, self(), Spid]),
             Spid ! {add, Key, Value, Qref, Client},

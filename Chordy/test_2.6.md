@@ -70,7 +70,7 @@ Conclusion:
 - A single node handling 4000 keys is not much slower than four clients each writing 1000 keys.
 - The difference between runs is small compared to the overall cost of the operations.
 
-So the answer is: In our experiments, no, it does not take significantly longer for one machine to handle 4000 elements than for four machines to do 1000 each: the overhead is very similar. This can be attribute to factors like an unbalanced ring (there is no gurantee that our keys are evenly distributed between the nodes), and the fact that all clients send the lookup request to the same node (and thus creating a bottleneck)
+So the answer is: In our experiments, no, it does not take significantly longer for one machine to handle 4000 elements than for four machines to do 1000 each: the overhead is very similar. This can be attributed to factors like an unbalanced ring (there is no gurantee that our keys are evenly distributed between the nodes), and the fact that all clients send the lookup request to the same node (and thus creating a bottleneck). The executions also shows that the storage time increases as nodes increase, which can be attributed to the fact that more routing needs to be done since we have more nodes.
 
 ## 2) What is the limiting factor?
 

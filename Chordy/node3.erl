@@ -4,7 +4,7 @@
 -define(Stabilize, 1000).
 -define(Timeout, 10000).
 
-% Node state: Id, Predecessor (nil | {PredKey, PredPid}), Successor ({SuccKey, SuccPid}), Next ({NxKey, NxPid}), and Store (list of tuples {Key, Value}).
+% Node state: Id, Predecessor (nil | {PredKey, PredRef, PredPid}), Successor ({SuccKey, SuccRef, SuccPid}), Next ({NxKey, NxPid}), and Store (list of tuples {Key, Value}).
 
 node(Id, Predecessor, Successor, Next, Store) ->
     receive
@@ -44,7 +44,7 @@ node(Id, Predecessor, Successor, Next, Store) ->
     end.
 
 create_probe(Id, Successor) ->
-    {_, Spid} = Successor,
+    {_, _, Spid} = Successor,
     Spid ! {probe, Id, [self()], erlang:system_time(microsecond)}.
 
 remove_probe(T, Nodes) ->
@@ -53,14 +53,14 @@ remove_probe(T, Nodes) ->
     io:format("Round trip probe nodes: ~p~n", [Nodes]).
 
 forward_probe(Ref, T, Nodes, _Id, Successor) ->
-    {_, Spid} = Successor,
+    {_, _, Spid} = Successor,
     ElapsedTime = erlang:system_time(microsecond) - T,
     io:format("Elapsed probe duration: ~p microseconds~n", [ElapsedTime]),
     io:format("Current round trip probe nodes: ~p~n", [Nodes]),
     Spid ! {probe, Ref, [self() | Nodes], T}.
 
 
-add(Key, Value, Qref, Client, Id, {Pkey, _}, {_, Spid}, Store) ->
+add(Key, Value, Qref, Client, Id, {Pkey, _, _}, {_, _, Spid}, Store) ->
     case key:between(Key, Pkey, Id) of
         true ->
             io:format("~w (~w) is responsible for key ~w~n", [Id, self(), Key]),
@@ -72,18 +72,18 @@ add(Key, Value, Qref, Client, Id, {Pkey, _}, {_, Spid}, Store) ->
             Store
     end.
 
-lookup(Key, Qref, Client, Id, {Pkey, _}, Successor, Store) ->
+lookup(Key, Qref, Client, Id, {Pkey, _, _}, Successor, Store) ->
     case key:between(Key, Pkey, Id) of
         true ->
             Result = storage:lookup(Key, Store),
             Client ! {Qref, Result};
         false ->
-            {_, Spid} = Successor,
+            {_, _, Spid} = Successor,
             Spid ! {lookup, Key, Qref, Client}
     end.
 
 stabilize(Pred, Id, Successor, Nx) ->
-    {Skey, Spid} = Successor,
+    {Skey, SRef, Spid} = Successor,
     case Pred of
         nil ->
             %
@@ -99,15 +99,19 @@ stabilize(Pred, Id, Successor, Nx) ->
             % successor points to itself - notify them about our existence
             Spid ! {notify, {Id, self()}},
             {Successor, Nx};
-        {Xkey, _Xpid} ->
+        {Xkey, Xpid} ->
             % successor points to a different node
             case key:between(Xkey, Id, Skey) of
                 true ->
+                    drop(SRef),
+                    NewSuccessor = {Xkey, monitor(Xpid), Xpid},
+                    NewNext = {Skey, Spid},
+
                     %
                     % node is between us and successor - adopt the node as our successor
                     % we use nil in order to notify the node about our existence.
                     % maybe it would be better to pass its real predeccesor (do we know it?).
-                    stabilize(nil, Id, Pred, Successor);
+                    stabilize(nil, Id, NewSuccessor, NewNext);
                 false ->
                     %
                     % node is before us - notify successor about our existence
@@ -119,27 +123,29 @@ stabilize(Pred, Id, Successor, Nx) ->
 schedule_stabilize() ->
     timer:send_interval(?Stabilize, self(), stabilize).
 
-stabilize({_, Spid}) ->
+stabilize({_, _, Spid}) ->
     Spid ! {request, self()}.
 
 request(Peer, Predecessor, Successor) ->
+    {Skey, _, Spid} = Successor,
     case Predecessor of
         nil ->
-            Peer ! {status, nil, Successor};
-        {Pkey, Ppid} ->
-            Peer ! {status, {Pkey, Ppid}, Successor}
+            Peer ! {status, nil, {Skey, Spid}};
+        {Pkey, _, Ppid} ->
+            Peer ! {status, {Pkey, Ppid}, {Skey, Spid}}
     end.
 
 notify({Nkey, Npid}, Id, Predecessor, Store) ->
     case Predecessor of
         nil ->
             Keep = handover(Id, Store, Nkey, Npid),
-            {{Nkey, Npid}, Keep};
-        {Pkey, _} ->
+            {{Nkey, monitor(Npid), Npid}, Keep};
+        {Pkey, Pref, _} ->
             case key:between(Nkey, Pkey, Id) of
                 true ->
                     Keep = handover(Id, Store, Nkey, Npid),
-                    {{Nkey, Npid}, Keep};
+                    drop(Pref),
+                    {{Nkey, monitor(Npid), Npid}, Keep};
                 false ->
                     {Predecessor, Store}
             end
@@ -159,9 +165,10 @@ start(Id, Peer) ->
 
 init(Id, Peer) ->
     Predecessor = nil,
-    {ok, Successor} = connect(Id, Peer), % we might need to handle the error case here too instead of just printing the error
+    {ok, {Skey, Spid}} = connect(Id, Peer), % we might need to handle the error case here too instead of just printing the error
+    Successor = {Skey, monitor(Spid), Spid},
+    Next = {Skey, Spid},
     schedule_stabilize(),
-    Next = Successor,
     node(Id, Predecessor, Successor, Next, storage:create()).
 
 connect(Id, nil) ->
@@ -174,3 +181,11 @@ connect(_Id, Peer) ->
     after ?Timeout ->
         io:format("Time out: no response~n",[])
     end.
+
+monitor(Pid) ->
+    erlang:monitor(process, Pid).
+
+drop(nil) -> 
+    ok;
+drop(Ref) ->
+    erlang:demonitor(Ref, [flush]).

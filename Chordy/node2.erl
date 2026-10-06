@@ -12,8 +12,8 @@ node(Id, Predecessor, Successor, Store) ->
             Peer ! {Qref, Id},
             node(Id, Predecessor, Successor, Store);
         {notify, New} ->
-            Pred = notify(New, Id, Predecessor),
-            node(Id, Pred, Successor, Store);
+            {Pred, NewStore} = notify(New, Id, Predecessor, Store),
+            node(Id, Pred, Successor, NewStore);
         {request, Peer} ->
             request(Peer, Predecessor),
             node(Id, Predecessor, Successor, Store);
@@ -37,7 +37,10 @@ node(Id, Predecessor, Successor, Store) ->
             node(Id, Predecessor, Successor, Added);
         {lookup, Key, Qref, Client} ->
             lookup(Key, Qref, Client, Id, Predecessor, Successor, Store),
-            node(Id, Predecessor, Successor, Store)
+            node(Id, Predecessor, Successor, Store);
+        {handover, Elements} ->
+            Merged = storage:merge(Store, Elements),
+            node(Id, Predecessor, Successor, Merged)
     end.
 
 create_probe(Id, Successor) ->
@@ -127,18 +130,25 @@ request(Peer, Predecessor) ->
             Peer ! {status, {Pkey, Ppid}}
     end.
 
-notify({Nkey, Npid}, Id, Predecessor) -> 
+notify({Nkey, Npid}, Id, Predecessor, Store) ->
     case Predecessor of
         nil ->
-            {Nkey, Npid};
+            Keep = handover(Id, Store, Nkey, Npid),
+            {{Nkey, Npid}, Keep};
         {Pkey, _} ->
             case key:between(Nkey, Pkey, Id) of
                 true ->
-                    {Nkey, Npid};
+                    Keep = handover(Id, Store, Nkey, Npid),
+                    {{Nkey, Npid}, Keep};
                 false ->
-                    Predecessor
+                    {Predecessor, Store}
             end
     end.
+
+handover(Id, Store, Nkey, Npid) ->
+    {Rest, Keep} = storage:split(Id, Nkey, Store),
+    Npid ! {handover, Rest},
+    Keep.
 
 start(Id) ->
     start(Id, nil).

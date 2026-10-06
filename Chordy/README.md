@@ -47,3 +47,9 @@ Without scheduled stabilization, nodes would not periodically try to stabilize b
 A newly joined node might initially connect, but the other nodes would not be able to reliably update their successor and predecessor pointers. So the ring could be incomple or outdated and the routing could be incorrect.
 
 A single-node ring would still work, but with more nodes the ring would not reliably converge to correctness without stabilization happening.
+
+## 2.5
+
+### What Store part should be handed over to our new predecessor during handover()?
+
+Since the new node in the ring has an identifer *X*, it should receives the existing keys with identifiers between **(*successor_node_id*, *X*]**. Previous_node_id is the id of the successor the node notified about its existence. This is the correct range, because if we have only one node in the ring (and thus stores all keys), with identifier *10*, and a new node joins with identifier *20*, when notifying node *10*, node *10* needs to handover keys in **(10, 20]** to node *20*, but keep keys in between **(20, 10]**. If node *10* only had keys in between **(20, 10]**, all is correct and nothing will get handovered to *20*.

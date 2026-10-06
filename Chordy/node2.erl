@@ -4,7 +4,7 @@
 -define(Stabilize, 1000).
 -define(Timeout, 10000).
 
-% Node state: Id, Predecessor (nil | {PredKey, PredPid}), and Successor ({SuccKey, SuccPid}).
+% Node state: Id, Predecessor (nil | {PredKey, PredPid}), Successor ({SuccKey, SuccPid}), and Store (list of tuples {Key, Value}).
 
 node(Id, Predecessor, Successor, Store) ->
     receive

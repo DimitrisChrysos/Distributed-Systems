@@ -1,6 +1,6 @@
 % 1 node ring handling 4000 keys, with 4 clients querying it (each client added 1000 keys)
 
--module(one_node_test_first_machine).
+-module(four_clients_test).
 
 -export([
     % run/0,
@@ -133,8 +133,9 @@ client_work(Client, ContactNode, Count) ->
     end),
 
     io:format("client=~p store_time_us=~p lookup_time_us=~p~n",
-              [Client, StoreUs, LookupUs]).
-    % self() ! {self(), done}.
+              [Client, StoreUs, LookupUs]),
+    % ok.
+    self() ! {self(), done}.
 
 generate_keys(Count, Client, Acc) ->
     if

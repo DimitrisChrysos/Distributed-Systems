@@ -53,3 +53,14 @@ A single-node ring would still work, but with more nodes the ring would not reli
 ### What Store part should be handed over to our new predecessor during handover()?
 
 Since the new node in the ring has an identifer *X*, it should receives the existing keys with identifiers between **(*successor_node_id*, *X*]**. Previous_node_id is the id of the successor the node notified about its existence. This is the correct range, because if we have only one node in the ring (and thus stores all keys), with identifier *10*, and a new node joins with identifier *20*, when notifying node *10*, node *10* needs to handover keys in **(10, 20]** to node *20*, but keep keys in between **(20, 10]**. If node *10* only had keys in between **(20, 10]**, all is correct and nothing will get handovered to *20*.
+
+## 3.3
+
+### What will happen if a node is falsely detected as being dead?
+A false 'DOWN' message can make a healthy node look dead, (usually because of a network partition or temporary connectivity problem). The remaining nodes may replace it and repair the ring without it, while the unavailable node may still be running and believe that the other nodes have failed. This can split the system into separate rings, causing inconsistent routing and conflicting data updates when the connection is restored.
+
+### What will happen if a node has only been temporally unavailable (and in the worst case, it might think that the rest of the network is gone)
+The remaining nodes may replace that "dead" node and form a repaired ring. Meanwhile, the unavailable node may still be running and may believe that the rest of the ring has failed. This can create two separate rings with conflicting routing and data updates. When connectivity returns, the rings may disagree about stored values.
+
+### How much would you gamble in trusting the ’DOWN’ message?
+In a real distributed store, we should not be able to trust it since connectivity issues such as network partitions are very frequent. We could use mechanisms, such a retries, before treating a node as definitively dead.

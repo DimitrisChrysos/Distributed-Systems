@@ -102,7 +102,7 @@ Currently storage:add/3 appends every {Key, Value} pair without checking whether
 There are always more possible problems, such as network partitions delayed messages, or multiple nodes failing at once.
 We can fix the problems we find, but we cannot easily prove that no other problems exist. We can aim for an implementation with no obvious faults, but not one that is obviously fault-free.
 
-## 5.1
+## 5.1 Routing
 
 ### Should we even try to take network distances into account and route to nodes that are network-wise close to us (remember that the ring is an overlay and does not say anything about network distance)?
 Our implementation forwards requests one successor at a time. This is fine for a small ring, but slow when there are many nodes.
@@ -118,7 +118,7 @@ The number of replicas depends on how reliable the nodes must be and how much da
 
 Replicas can also answer read requests, which can reduce load and improve latency. However, this may return outdated data if replicas are not fully synchronized.
 
-To find replicas, first find the node responsible for a key. Its successor, and potentialyy successors, hold the replicas.
+To find replicas, first find the node responsible for a key. Its successor, and potentially successors, hold the replicas.
 
 A good hash function can distribute keys and nodes evenly around the ring, reducing hot-spots, so replicas are also spread across different nodes.
 

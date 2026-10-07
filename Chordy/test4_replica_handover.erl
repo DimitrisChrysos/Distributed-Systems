@@ -9,7 +9,7 @@
 %   The value is added before node 20 joins. It is initially stored at
 %   node 10 and replicated at node 30. When node 20 joins between them,
 %   it must receive node 30's replica of node 10's store. Killing node 10
-%   must therefore not lose key 5.
+%   and 30 must therefore not lose key 5.
 
 -module(test4_replica_handover).
 -export([run/0]).
@@ -30,6 +30,8 @@ run() ->
     P2 = node4:start(20, P1),
     timer:sleep(5000),
     exit(P1, kill),
+    timer:sleep(5000),
+    exit(P3, kill),
     timer:sleep(5000),
 
     LookupRef = make_ref(),

@@ -57,10 +57,10 @@ Since the new node in the ring has an identifer *X*, it should receives the exis
 ## 3.3
 
 ### What will happen if a node is falsely detected as being dead?
-A false 'DOWN' message can make a healthy node look dead, (usually because of a network partition or temporary connectivity problem). The remaining nodes may replace it and repair the ring without it, while the unavailable node may still be running and believe that the other nodes have failed. This can split the system into separate rings, causing inconsistent routing and conflicting data updates when the connection is restored.
+A false 'DOWN' message can make a healthy node look dead, (usually because of a network partition or temporary connectivity problem). The remaining nodes may replace it and repair the ring without it, while the unavailable node may still be running and believe that the other nodes have failed. This can split the system into separate rings, causing inconsistent routing. If the dead node gets restored though, it will manage to eventually stabilize with the rest of the ring and receive any key-values that its successor collected while it was dead. In that case, if the successor hands it over some keys that are already stored in the dead node, the node can overide its own values that are old).
 
 ### What will happen if a node has only been temporally unavailable (and in the worst case, it might think that the rest of the network is gone)
-The remaining nodes may replace that "dead" node and form a repaired ring. Meanwhile, the unavailable node may still be running and may believe that the rest of the ring has failed. This can create two separate rings with conflicting routing and data updates. When connectivity returns, the rings may disagree about stored values.
+The remaining nodes may replace that "dead" node and form a repaired ring. Meanwhile, the unavailable node may still be running and may believe that the rest of the ring has failed. This can create two separate rings with conflicting routing and data updates. When connectivity returns, the node will be stabilized again and receive any key-values that should become its responsibility.
 
 ### How much would you gamble in trusting the ’DOWN’ message?
 In a real distributed store, we should not be able to trust it since connectivity issues such as network partitions are very frequent. We could use mechanisms, such a retries, before treating a node as definitively dead.

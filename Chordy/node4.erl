@@ -1,49 +1,58 @@
--module(node3).
+-module(node4).
 -export([start/1, start/2]).
 
 -define(Stabilize, 1000).
 -define(Timeout, 10000).
 
-% Node state: Id, Predecessor (nil | {PredKey, PredRef, PredPid}), Successor ({SuccKey, SuccRef, SuccPid}), Next ({NxKey, NxPid}), and Store (list of tuples {Key, Value}).
+% Node state: 
+%   Id,
+%   Predecessor (nil | {PredKey, PredRef, PredPid}),
+%   Successor ({SuccKey, SuccRef, SuccPid}),
+%   Next ({NxKey, NxPid}),
+%   Store (list of tuples {Key, Value}), and
+%   Replica (list of tuples {Key, Value})
 
-node(Id, Predecessor, Successor, Next, Store) ->
+node(Id, Predecessor, Successor, Next, Store, Replica) ->
     receive
         {key, Qref, Peer} ->
             Peer ! {Qref, Id},
-            node(Id, Predecessor, Successor, Next, Store);
+            node(Id, Predecessor, Successor, Next, Store, Replica);
         {notify, New} ->
             {Pred, NewStore} = notify(New, Id, Predecessor, Store),
-            node(Id, Pred, Successor, Next, NewStore);
+            node(Id, Pred, Successor, Next, NewStore, Replica);
         {request, Peer} ->
             request(Peer, Predecessor, Successor),
-            node(Id, Predecessor, Successor, Next, Store);
+            node(Id, Predecessor, Successor, Next, Store, Replica);
         {status, Pred, Nx} ->
             {Succ, Nxt} = stabilize(Pred, Id, Successor, Nx),
-            node(Id, Predecessor, Succ, Nxt, Store);
+            node(Id, Predecessor, Succ, Nxt, Store, Replica);
         stabilize ->
             stabilize(Successor),
-            node(Id, Predecessor, Successor, Next, Store);
+            node(Id, Predecessor, Successor, Next, Store, Replica);
         probe ->
             create_probe(Id, Successor),
-            node(Id, Predecessor, Successor, Next, Store);
+            node(Id, Predecessor, Successor, Next, Store, Replica);
         {probe, Id, Nodes, T} ->
             remove_probe(T, Nodes),
-            node(Id, Predecessor, Successor, Next, Store);
+            node(Id, Predecessor, Successor, Next, Store, Replica);
         {probe, Ref, Nodes, T} -> 
             forward_probe(Ref, T, Nodes, Id, Successor),
-            node(Id, Predecessor, Successor, Next, Store);
+            node(Id, Predecessor, Successor, Next, Store, Replica);
         {add, Key, Value, Qref, Client} ->
             Added = add(Key, Value, Qref, Client, Id, Predecessor, Successor, Store),
-            node(Id, Predecessor, Successor, Next, Added);
+            node(Id, Predecessor, Successor, Next, Added, Replica);
         {lookup, Key, Qref, Client} ->
             lookup(Key, Qref, Client, Id, Predecessor, Successor, Store),
-            node(Id, Predecessor, Successor, Next, Store);
+            node(Id, Predecessor, Successor, Next, Store, Replica);
         {handover, Elements} ->
             Merged = storage:merge(Store, Elements),
-            node(Id, Predecessor, Successor, Next, Merged);
+            node(Id, Predecessor, Successor, Next, Merged, Replica);
         {'DOWN', Ref, process, _, _} ->
-            {Pred, Succ, Nxt} = down(Ref, Predecessor, Successor, Next),
-            node(Id, Pred, Succ, Nxt, Store)
+            {Pred, Succ, Nxt, NewStore, NewReplica} = down(Ref, Predecessor, Successor, Next, Store, Replica),
+            node(Id, Pred, Succ, Nxt, NewStore, NewReplica);
+        {replicate, Key, Value} ->
+            Replicated = storage:add(Key, Value, Replica),
+            node(Id, Predecessor, Successor, Next, Store, Replicated)
     end.
 
 create_probe(Id, Successor) ->
@@ -68,6 +77,7 @@ add(Key, Value, Qref, Client, Id, {Pkey, _, _}, {_, _, Spid}, Store) ->
         true ->
             io:format("~w (~w) is responsible for key ~w~n", [Id, self(), Key]),
             Client ! {Qref, ok},
+            Spid ! {replicate, Key, Value},
             storage:add(Key, Value, Store);
         false ->
             io:format("~w (~w) sends key-value to ~w~n", [Id, self(), Spid]),
@@ -172,7 +182,7 @@ init(Id, Peer) ->
     Successor = {Skey, monitor(Spid), Spid},
     Next = {Skey, Spid},
     schedule_stabilize(),
-    node(Id, Predecessor, Successor, Next, storage:create()).
+    node(Id, Predecessor, Successor, Next, storage:create(), storage:create()).
 
 connect(Id, nil) ->
     {ok, {Id, self()}};
@@ -193,9 +203,9 @@ drop(nil) ->
 drop(Ref) ->
     erlang:demonitor(Ref, [flush]).
 
-down(Ref, {_, Ref, _}, Successor, Next) ->
-    {nil, Successor, Next};
-down(Ref, Predecessor, {_, Ref, _}, {Nkey, Npid}) ->
+down(Ref, {_, Ref, _}, Successor, Next, Store, Replica) ->
+    {nil, Successor, Next, storage:merge(Replica, Store), storage:create()};
+down(Ref, Predecessor, {_, Ref, _}, {Nkey, Npid}, Store, Replica) ->
     Nref = monitor(Npid),
     self() ! stabilize,
-    {Predecessor, {Nkey, Nref, Npid}, nil}.
+    {Predecessor, {Nkey, Nref, Npid}, nil, Store, Replica}.

@@ -64,3 +64,40 @@ The remaining nodes may replace that "dead" node and form a repaired ring. Meanw
 
 ### How much would you gamble in trusting the ’DOWN’ message?
 In a real distributed store, we should not be able to trust it since connectivity issues such as network partitions are very frequent. We could use mechanisms, such a retries, before treating a node as definitively dead.
+
+## 4.2
+
+### What does it mean that an element has been added to the store?
+An element should only be considered added when it exists both in the responsible node’s Store and in its successor’s Replica.
+
+### Can we send a confirmation to the client and then replicate the element, what if we fail?
+No. If the node confirms first and then fails before replication is complete, the client may believe the value was stored even though it has been lost.
+
+### Who should send the confirmation?
+The successor should confirm the replication to the responsible node. Once it knows that the value is stored locally and replicated successfully, the responsible node should send the final confirmation to the client.
+
+### What happens if the element was added the first time but the confirmation message was lost?
+The value may already be stored and replicated successfully, but the client does not know this because it never received ok. If the client resends the add request, the same value may be added again.
+
+### Will we handle duplicates properly?
+Currently storage:add/3 appends every {Key, Value} pair without checking whether that key already exists. The duplicate will also be replicated.
+
+### Another problem has to do with a joining node in combination with adding a new value. You have to think twice before realizing we have a problem. What would a solution look like?
+
+- A join changes which node owns a key interval.
+
+- The old successor must transfer the relevant Store entries to the joining node. Its old Replica becomes the joining node’s Replica, while the transferred Store entries become the old successor’s new Replica.
+
+- This transfer happens through several asynchronous messages, so it is not atomic.
+
+- A client may add a key from the moving interval during the handover. The add may be processed according to the old ownership information and therefore be omitted from the transfer or replicated to the wrong successor.
+
+- A solution is to mark that interval as being handed over and temporarily queue or forward writes for it.
+
+- The nodes should transfer the Store and Replica data, confirm that the transfer is complete, and then finish the ownership change.
+
+- Any queued writes should then be processed by the new owner and replicated to its successor.
+
+### Are there more devils? Will we have an implementation with no obvious faults or an implementation with obviously no faults?
+There are always more possible problems, such as network partitions delayed messages, or multiple nodes failing at once.
+We can fix the problems we find, but we cannot easily prove that no other problems exist. We can aim for an implementation with no obvious faults, but not one that is obviously fault-free.

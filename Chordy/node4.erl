@@ -18,8 +18,8 @@ node(Id, Predecessor, Successor, Next, Store, Replica) ->
             Peer ! {Qref, Id},
             node(Id, Predecessor, Successor, Next, Store, Replica);
         {notify, New} ->
-            {Pred, NewStore} = notify(New, Id, Predecessor, Store),
-            node(Id, Pred, Successor, Next, NewStore, Replica);
+            {Pred, NewStore, NewReplica} = notify(New, Id, Predecessor, Store, Replica),
+            node(Id, Pred, Successor, Next, NewStore, NewReplica);
         {request, Peer} ->
             request(Peer, Predecessor, Successor),
             node(Id, Predecessor, Successor, Next, Store, Replica);
@@ -44,15 +44,21 @@ node(Id, Predecessor, Successor, Next, Store, Replica) ->
         {lookup, Key, Qref, Client} ->
             lookup(Key, Qref, Client, Id, Predecessor, Successor, Store),
             node(Id, Predecessor, Successor, Next, Store, Replica);
-        {handover, Elements} ->
-            Merged = storage:merge(Store, Elements),
-            node(Id, Predecessor, Successor, Next, Merged, Replica);
+        {handover, Elements, ReplicaElements, {Pkey, Ppid}} ->
+            MergedStore = storage:merge(Store, Elements),
+            MergedReplica = storage:merge(Replica, ReplicaElements),
+            Pred = {Pkey, monitor(Ppid), Ppid},
+            node(Id, Pred, Successor, Next, MergedStore, MergedReplica);
         {'DOWN', Ref, process, _, _} ->
             {Pred, Succ, Nxt, NewStore, NewReplica} = down(Ref, Predecessor, Successor, Next, Store, Replica),
             node(Id, Pred, Succ, Nxt, NewStore, NewReplica);
-        {replicate, Key, Value} ->
+        {replicate, Key, Value, Qref, Client, Owner} ->
             Replicated = storage:add(Key, Value, Replica),
-            node(Id, Predecessor, Successor, Next, Store, Replicated)
+            Owner ! {replicated, Qref, Client},
+            node(Id, Predecessor, Successor, Next, Store, Replicated);
+        {replicated, Qref, Client} ->
+            Client ! {Qref, ok},
+            node(Id, Predecessor, Successor, Next, Store, Replica)
     end.
 
 create_probe(Id, Successor) ->
@@ -76,8 +82,7 @@ add(Key, Value, Qref, Client, Id, {Pkey, _, _}, {_, _, Spid}, Store) ->
     case key:between(Key, Pkey, Id) of
         true ->
             io:format("~w (~w) is responsible for key ~w~n", [Id, self(), Key]),
-            Client ! {Qref, ok},
-            Spid ! {replicate, Key, Value},
+            Spid ! {replicate, Key, Value, Qref, Client, self()},
             storage:add(Key, Value, Store);
         false ->
             io:format("~w (~w) sends key-value to ~w~n", [Id, self(), Spid]),
@@ -148,26 +153,32 @@ request(Peer, Predecessor, Successor) ->
             Peer ! {status, {Pkey, Ppid}, {Skey, Spid}}
     end.
 
-notify({Nkey, Npid}, Id, Predecessor, Store) ->
+notify({Nkey, Npid}, Id, Predecessor, Store, Replica) ->
     case Predecessor of
         nil ->
-            Keep = handover(Id, Store, Nkey, Npid),
-            {{Nkey, monitor(Npid), Npid}, Keep};
+            {Keep, NewReplica} = handover(Id, Predecessor, Store, Replica, Nkey, Npid),
+            {{Nkey, monitor(Npid), Npid}, Keep, NewReplica};
         {Pkey, Pref, _} ->
             case key:between(Nkey, Pkey, Id) of
                 true ->
-                    Keep = handover(Id, Store, Nkey, Npid),
+                    {Keep, NewReplica} = handover(Id, Predecessor, Store, Replica, Nkey, Npid),
                     drop(Pref),
-                    {{Nkey, monitor(Npid), Npid}, Keep};
+                    {{Nkey, monitor(Npid), Npid}, Keep, NewReplica};
                 false ->
-                    {Predecessor, Store}
+                    {Predecessor, Store, Replica}
             end
     end.
 
-handover(Id, Store, Nkey, Npid) ->
+handover(Id, Predecessor, Store, Replica, Nkey, Npid) ->
     {Rest, Keep} = storage:split(Id, Nkey, Store),
-    Npid ! {handover, Rest},
-    Keep.
+    Pred = case Predecessor of
+        nil ->
+            {Id, self()};
+        {Pkey, _, Ppid} ->
+            {Pkey, Ppid}
+    end,
+    Npid ! {handover, Rest, Replica, Pred},
+    {Keep, Rest}.
 
 start(Id) ->
     start(Id, nil).

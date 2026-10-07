@@ -101,3 +101,43 @@ Currently storage:add/3 appends every {Key, Value} pair without checking whether
 ### Are there more devils? Will we have an implementation with no obvious faults or an implementation with obviously no faults?
 There are always more possible problems, such as network partitions delayed messages, or multiple nodes failing at once.
 We can fix the problems we find, but we cannot easily prove that no other problems exist. We can aim for an implementation with no obvious faults, but not one that is obviously fault-free.
+
+## 5.1
+
+### Should we even try to take network distances into account and route to nodes that are network-wise close to us (remember that the ring is an overlay and does not say anything about network distance)?
+Our implementation forwards requests one successor at a time. This is fine for a small ring, but slow when there are many nodes.
+
+We could use a routing table to reach the correct node in fewer hops, as the Chord paper describes.
+
+Since the ring is only logical, nearby node IDs may be far apart in the real network. Taking network latency into account could make routing faster, but we should also make sure that each route makes the message move closer to the correct key.
+
+## 5.2 Replication
+One replica protects against one node failure. More replicas improve reliability and availability, but require more overhead.
+
+The number of replicas depends on how reliable the nodes must be and how much data loss the system can accept. A larger ring gives more possible nodes to place replicas on, but the replication factor should mainly be based on the required reliability.
+
+Replicas can also answer read requests, which can reduce load and improve latency. However, this may return outdated data if replicas are not fully synchronized.
+
+To find replicas, first find the node responsible for a key. Its successor, and potentialyy successors, hold the replicas.
+
+A good hash function can distribute keys and nodes evenly around the ring, reducing hot-spots, so replicas are also spread across different nodes.
+
+## 5.3 Mutable object
+If replicas are not updated together, different nodes can return different values for the same object.
+
+Two-phase-commit could ensure that all replicas agree before confirming an update, but it makes writes slower and can block when nodes are unavailable.
+
+A cheaper alternative is asynchronous replication, which provides eventual consistency. Writes are faster, but reads may temporarily return old values until the replicas are updated.
+
+A shopping cart can accept relaxed consistency because a short delay is usually harmless. Items added on one device may appear later on another device once replicas synchronize. How relaxed we can be depends on the operation. A short delay is acceptable for data such as a shopping cart as mentioned above, but operations such as payments need stronger consistency.
+
+## Conclusion
+
+### Can we guarantee that added values never are lost (given a maximum number of failed nodes)?
+Only if every value is replicated before it is confirmed to the client. With r copies on different nodes, the system can normally survive up to r - 1 failed nodes. This also requires all replicas to have synchronized.
+
+### What is the advantage of the distributed store? Is it performance or fault tolerance?
+A distributed store can improve both performance and fault tolerance. Data and requests can be spread across several nodes, while replicas keep data available if a node fails.
+
+### What should we optimize if we have to choose between them?
+It depends on the application. For important data such as payments, fault tolerance and consistency are more important. For less critical data, performance may be the priority.

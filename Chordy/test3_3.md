@@ -119,7 +119,21 @@ Round trip probe nodes: [<0.110.0>,<0.102.0>]
 17> 
 ```
 
-This probe contains only the PIDs for nodes `10` and `30`, showing that the repaired ring is:
+- This showcases that 10 replaced its old successor with 30, allowing it to recover from the failure of 20.
+- If we forward a probe by 30, we should see that 30 also recovered its predecessor:
+
+```erlang
+P3 ! probe.
+Elapsed probe duration: 10 microseconds
+probe
+Current round trip probe nodes: [<0.110.0>]
+Total probe round-trip duration: 333 microseconds
+Round trip probe nodes: [<0.102.0>,<0.110.0>]
+
+```
+
+- These probes contain only the PIDs for nodes `10` and `30`.
+- By the round trip of the probes of both executions, it is verified that the new ring is:
 
 ```text
 10 → 30 → 10
